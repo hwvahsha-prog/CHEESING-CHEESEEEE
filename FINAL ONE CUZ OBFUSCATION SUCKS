@@ -1,0 +1,555 @@
+
+local repo = 'https://raw.githubusercontent.com/mstudio45/LinoriaLib/main/'
+local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
+
+local CoreGui = game:GetService("CoreGui")
+if CoreGui:FindFirstChild("NortixGUI") then CoreGui.NortixGUI:Destroy() end
+
+local ScreenGui = Instance.new("ScreenGui", CoreGui)
+ScreenGui.Name = "NortixGUI"
+ScreenGui.ResetOnSpawn = false
+
+local LockButton = Instance.new("TextButton", ScreenGui)
+LockButton.Size = UDim2.new(0, 90, 0, 90)
+LockButton.Position = UDim2.new(0.1, 0, 0.4, -45)
+LockButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+LockButton.BackgroundTransparency = 0.15
+LockButton.BorderSizePixel = 0
+LockButton.Draggable = true
+LockButton.Active = true
+LockButton.Text = ""
+
+local UICorner = Instance.new("UICorner", LockButton)
+UICorner.CornerRadius = UDim.new(0, 14)
+
+local GradientBG = Instance.new("UIGradient", LockButton)
+GradientBG.Rotation = 45
+GradientBG.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(5, 25, 95)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 180, 255))
+})
+
+local N_Label = Instance.new("TextLabel", LockButton)
+N_Label.Size = UDim2.new(1, 0, 1, 0)
+N_Label.BackgroundTransparency = 1
+N_Label.Text = "N"
+N_Label.Font = Enum.Font.GothamBold
+N_Label.TextSize = 48
+N_Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+N_Label.TextStrokeTransparency = 0.8
+
+local MiscButton = Instance.new("TextButton", ScreenGui)
+MiscButton.Size = UDim2.new(0, 120, 0, 45)
+MiscButton.Position = UDim2.new(0.1, -15, 0.4, 60)
+MiscButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+MiscButton.BackgroundTransparency = 0.15
+MiscButton.BorderSizePixel = 0
+MiscButton.Draggable = true
+MiscButton.Active = true
+MiscButton.Text = ""
+
+local MiscCorner = Instance.new("UICorner", MiscButton)
+MiscCorner.CornerRadius = UDim.new(0, 8)
+
+local MiscGradient = Instance.new("UIGradient", MiscButton)
+MiscGradient.Rotation = 45
+MiscGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(75, 10, 115)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(165, 40, 210))
+})
+
+local MiscLabel = Instance.new("TextLabel", MiscButton)
+MiscLabel.Size = UDim2.new(1, 0, 1, 0)
+MiscLabel.BackgroundTransparency = 1
+MiscLabel.Text = "MISC OFF"
+MiscLabel.Font = Enum.Font.GothamBold
+MiscLabel.TextSize = 15
+MiscLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+MiscLabel.TextStrokeTransparency = 0.8
+
+local Window = Library:CreateWindow({
+    Title = 'Nortix.CC',
+    Center = true,
+    AutoShow = true,
+    Resizable = true,
+    ShowCustomCursor = true,
+    UnlockMouseWhileOpen = true,
+    NotifySide = "Left",
+    TabPadding = 8,
+    MenuFadeTime = 0.2
+})
+
+local Tabs = {
+    Main = Window:AddTab('Combat'),
+    Misc = Window:AddTab('Misc'),
+    ['UI Settings'] = Window:AddTab('UI Settings'),
+}
+
+local LeftGroupBox = Tabs.Main:AddLeftGroupbox('Home')
+local TargetSettingsBox = Tabs.Main:AddLeftGroupbox('Target Settings')
+local RightGroupBox = Tabs.Main:AddRightGroupbox('Silent Aim')
+local MovementBox = Tabs.Misc:AddLeftGroupbox('Movement Mods')
+local GuiSettingsBox = Tabs.Misc:AddRightGroupbox('Screen Button Settings')
+
+local CurrentTarget = nil
+local MiscActive = false
+
+LeftGroupBox:AddToggle('ToggleShowGUI', {
+    Text = 'show button',
+    Default = true,
+    Callback = function(Value)
+        ScreenGui.Enabled = Value
+    end
+})
+
+LeftGroupBox:AddToggle('ToggleEnabled', {
+    Text = 'Lock',
+    Default = false,
+    Callback = function(Value)
+        if N_Label then
+            if Value then
+                N_Label.TextColor3 = Color3.fromRGB(0, 255, 150)
+            else
+                N_Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            end
+        end
+    end
+})
+
+LeftGroupBox:AddToggle('ToggleNearestPoint', {
+    Text = 'Nearest Point',
+    Default = true
+})
+
+LeftGroupBox:AddToggle('ToggleWallCheck', {
+    Text = 'Wall Check',
+    Default = true
+})
+
+LeftGroupBox:AddInput('PredictionInput', {
+    Default = '0.15038',
+    Numeric = true,
+    Finished = false,
+    ClearTextOnFocus = false,
+    Text = 'Prediction'
+})
+
+LeftGroupBox:AddSlider('SmoothnessSlider', {
+    Text = 'Smoothness',
+    Default = 1,
+    Min = 1,
+    Max = 100,
+    Rounding = 0,
+    Compact = false,
+})
+LeftGroupBox:AddToggle('ToggleLookAtTarget', {
+    Text = 'Look At',
+    Default = true
+})
+
+LeftGroupBox:AddToggle('ToggleViewTarget', {
+    Text = 'View',
+    Default = true
+})
+
+TargetSettingsBox:AddToggle('BotSupport', {
+    Text = 'Bot Support',
+    Default = false
+})
+
+RightGroupBox:AddSlider('Fov Circle', {
+    Text = 'Changes Fov Size',
+    Default = 150,
+    Min = 0,
+    Max = 500,
+    Rounding = 1,
+    Compact = false,
+})
+
+RightGroupBox:AddToggle('ToggleSilentAim', {
+    Text = 'Silent Aim',
+    Default = true,
+    Risky = true,
+})
+
+RightGroupBox:AddLabel('Only Works for Void falls and des hood i think')
+
+RightGroupBox:AddInput('PredictionAimInput', {
+    Default = '0.185',
+    Numeric = true,
+    Finished = false,
+    ClearTextOnFocus = false,
+    Text = 'Prediction'
+})
+RightGroupBox:AddDropdown('MyMultiDropdown', {
+    Values = { 'Fireserver', 'Raycast', },
+    Default = 1,
+    Multi = true,
+    Text = 'Method',
+})
+
+MovementBox:AddToggle('UseWalkSpeed', {
+    Text = 'Enable WalkSpeed',
+    Default = false
+})
+
+MovementBox:AddSlider('WalkSpeedValue', {
+    Text = 'WalkSpeed Value',
+    Default = 16,
+    Min = 16,
+    Max = 250,
+    Rounding = 0,
+    Compact = false
+})
+
+MovementBox:AddToggle('UseJumpPower', {
+    Text = 'Enable JumpPower',
+    Default = false
+})
+
+MovementBox:AddSlider('JumpPowerValue', {
+    Text = 'JumpPower Value',
+    Default = 50,
+    Min = 50,
+    Max = 500,
+    Rounding = 0,
+    Compact = false
+})
+
+GuiSettingsBox:AddToggle('ShowMiscButton', {
+    Text = 'Walkspeed button',
+    Default = true,
+    Callback = function(Value)
+        MiscButton.Visible = Value
+    end
+})
+
+local Options = Library.Options
+local Toggles = Library.Toggles
+
+Library:SetWatermarkVisibility(true)
+
+local FrameTimer = tick()
+local FrameCounter = 0
+local FPS = 60
+local GetPing = (function() return math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue()) end)
+local CanDoPing = pcall(function() return GetPing() end)
+
+local WatermarkConnection = game:GetService('RunService').RenderStepped:Connect(function()
+    FrameCounter = FrameCounter + 1
+    if (tick() - FrameTimer) >= 1 then
+        FPS = FrameCounter
+        FrameTimer = tick()
+        FrameCounter = 0
+    end
+    if CanDoPing then
+        Library:SetWatermark(('Nortix.cc | %d fps | %d ms'):format(math.floor(FPS), GetPing()))
+    else
+        Library:SetWatermark(('Nortix.cc | %d fps'):format(math.floor(FPS)))
+    end
+end)
+
+Library:OnUnload(function()
+    WatermarkConnection:Disconnect()
+    Library.Unloaded = true
+end)
+
+local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
+MenuGroup:AddToggle("KeybindMenuOpen", { Default = Library.KeybindFrame.Visible, Text = "Open Keybind Menu", Callback = function(value) Library.KeybindFrame.Visible = value end})
+MenuGroup:AddToggle("ShowCustomCursor", {Text = "Custom Cursor", Default = true, Callback = function(Value) Library.ShowCustomCursor = Value end})
+MenuGroup:AddDivider()
+MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
+MenuGroup:AddButton("Unload", function() Library:Unload() end)
+Library.ToggleKeybind = Options.MenuKeybind
+
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ 'MenuKeybind' })
+ThemeManager:SetFolder('NortixHub')
+SaveManager:SetFolder('NortixHub/configs')
+SaveManager:BuildConfigSection(Tabs['UI Settings'])
+ThemeManager:ApplyToTab(Tabs['UI Settings'])
+
+local Players = game:GetService("Players")
+local RS = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LP = Players.LocalPlayer
+local Mouse = LP:GetMouse()
+
+LockButton.MouseButton1Click:Connect(function()
+    Toggles.ToggleEnabled:SetValue(not Toggles.ToggleEnabled.Value)
+end)
+
+MiscButton.MouseButton1Click:Connect(function()
+    MiscActive = not MiscActive
+    if MiscActive then
+        MiscLabel.Text = "MISC ON"
+        MiscLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
+    else
+        MiscLabel.Text = "MISC OFF"
+        MiscLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        
+        local char = LP.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = 16
+            if hum.UseJumpPower then
+                hum.JumpPower = 50
+            else
+                hum.JumpHeight = 7.2
+            end
+        end
+    end
+end)
+
+local fovCircle = Drawing.new("Circle")
+fovCircle.Visible = false
+fovCircle.Radius = 150
+fovCircle.Color = Color3.fromRGB(255, 255, 255)
+fovCircle.Thickness = 1.5
+fovCircle.Transparency = 0.6
+fovCircle.Filled = false
+
+local silentTarget = nil
+local silentTargetPart = nil
+
+local function getAllTargets()
+    local targets = {}
+    local useBots = Toggles.BotSupport and Toggles.BotSupport.Value
+    
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LP and p.Character then
+            table.insert(targets, p.Character)
+        end
+    end
+    
+    if useBots then
+        for _, child in pairs(workspace:GetChildren()) do
+            if child:IsA("Model") and child ~= LP.Character and not Players:GetPlayerFromCharacter(child) then
+                local hum = child:FindFirstChildOfClass("Humanoid")
+                local root = child:FindFirstChild("HumanoidRootPart")
+                if hum and root and hum.Health > 0 then
+                    table.insert(targets, child)
+                end
+            end
+        end
+    end
+    return targets
+end
+
+local function getClosestInFOV()
+    local closest = nil
+    local closestPart = nil
+    local shortestDist = math.huge
+    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local radius = Options['Fov Circle'].Value
+
+    local targets = getAllTargets()
+    for _, char in pairs(targets) do
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if hum and root and hum.Health > 0 then
+            local sp, on = Camera:WorldToViewportPoint(root.Position)
+            if on and sp.Z > 0 then
+                local dist = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+                if dist <= radius and dist < shortestDist then
+                    closest = char
+                    closestPart = root
+                    shortestDist = dist
+                end
+            end
+        end
+    end
+    return closest, closestPart
+end
+
+local function isCharacterAlive(char)
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum and hum.Health > 0 then
+            return true
+        end
+    end
+    return false
+end
+
+local function checkWall(part)
+    if not Toggles.ToggleWallCheck or not Toggles.ToggleWallCheck.Value then return true end
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Exclude
+    params.FilterDescendantsInstances = {LP.Character, Camera, part.Parent}
+    
+    local dir = (part.Position - Camera.CFrame.Position).Unit * (part.Position - Camera.CFrame.Position).Magnitude
+    local hit = workspace:Raycast(Camera.CFrame.Position, dir, params)
+    
+    return hit == nil 
+end
+
+local function getNearestPart(char)
+    if not Toggles.ToggleNearestPoint or not Toggles.ToggleNearestPoint.Value then
+        return char:FindFirstChild("HumanoidRootPart")
+    end
+    local closestPart = nil
+    local shortest = math.huge
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    
+    for _, v in pairs(char:GetChildren()) do
+        if v:IsA("BasePart") then
+            local pos, on = Camera:WorldToViewportPoint(v.Position)
+            if on then
+                local dist = (Vector2.new(pos.X, pos.Y) - screenCenter).Magnitude
+                if dist < shortest then
+                    closestPart = v
+                    shortest = dist
+                end
+            end
+        end
+    end
+    return closestPart or char:FindFirstChild("HumanoidRootPart")
+end
+
+local function getLockTarget()
+    local closest = nil
+    local shortest = math.huge
+    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+    local targets = getAllTargets()
+    for _, char in pairs(targets) do
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if root then
+            local pos, on = Camera:WorldToViewportPoint(root.Position)
+            if on and pos.Z > 0 then
+                local dist = (Vector2.new(pos.X, pos.Y) - screenCenter).Magnitude
+                if dist < shortest then
+                    if checkWall(root) then
+                        closest = char
+                        shortest = dist
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+RS.RenderStepped:Connect(function()
+    if Toggles.ToggleEnabled and Toggles.ToggleEnabled.Value then
+        if not CurrentTarget or not isCharacterAlive(CurrentTarget) then
+            CurrentTarget = getLockTarget()
+        end
+
+        if CurrentTarget then
+            local targetPart = getNearestPart(CurrentTarget)
+
+            if Toggles.ToggleViewTarget and Toggles.ToggleViewTarget.Value then
+                Camera.CameraSubject = CurrentTarget:FindFirstChildOfClass("Humanoid")
+            else
+                Camera.CameraSubject = LP.Character:FindFirstChildOfClass("Humanoid")
+            end
+
+            if Toggles.ToggleLookAtTarget and Toggles.ToggleLookAtTarget.Value and targetPart then
+                local rootPart = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+                if rootPart then
+                    local targetPos = Vector3.new(targetPart.Position.X, rootPart.Position.Y, targetPart.Position.Z)
+                    rootPart.CFrame = CFrame.new(rootPart.Position, targetPos)
+                end
+            end
+
+            if targetPart and checkWall(targetPart) then
+                local pred = tonumber(Options.PredictionInput.Value) or 0
+                local targetPos = targetPart.Position + (targetPart.AssemblyLinearVelocity * pred)
+                local smoothnessVal = Options.SmoothnessSlider and Options.SmoothnessSlider.Value or 1
+                local smooth = math.clamp(1 / smoothnessVal, 0.01, 1)
+                
+                local currCFrame = Camera.CFrame
+                local targetCFrame = CFrame.new(currCFrame.Position, targetPos)
+                Camera.CFrame = currCFrame:Lerp(targetCFrame, smooth)
+            end
+        else
+            CurrentTarget = nil
+            if LP.Character and LP.Character:FindFirstChildOfClass("Humanoid") then
+                Camera.CameraSubject = LP.Character:FindFirstChildOfClass("Humanoid")
+            end
+        end
+    else
+        CurrentTarget = nil
+        if LP.Character and LP.Character:FindFirstChildOfClass("Humanoid") then
+            Camera.CameraSubject = LP.Character:FindFirstChildOfClass("Humanoid")
+        end
+    end
+
+    if Toggles.ToggleSilentAim and Toggles.ToggleSilentAim.Value then
+        fovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        fovCircle.Radius = Options['Fov Circle'] and Options['Fov Circle'].Value or 150
+        fovCircle.Visible = true
+        local sTarget, sPart = getClosestInFOV()
+        silentTarget = sTarget
+        silentTargetPart = sPart or (sTarget and sTarget:FindFirstChild("HumanoidRootPart"))
+    else
+        fovCircle.Visible = false
+        silentTarget = nil
+        silentTargetPart = nil
+    end
+end)
+
+RS.Heartbeat:Connect(function()
+    local char = LP.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        if MiscActive then
+            if Toggles.UseWalkSpeed and Toggles.UseWalkSpeed.Value then
+                local wsVal = Options.WalkSpeedValue and Options.WalkSpeedValue.Value or 16
+                hum.WalkSpeed = wsVal
+            end
+            if Toggles.UseJumpPower and Toggles.UseJumpPower.Value then
+                local jpVal = Options.JumpPowerValue and Options.JumpPowerValue.Value or 50
+                if hum.UseJumpPower then
+                    hum.JumpPower = jpVal
+                else
+                    hum.JumpHeight = (jpVal / 50) * 7.2
+                end
+            end
+        end
+    end
+end)
+
+local mt = getrawmetatable(game)
+local originalNamecall = mt.__namecall
+local originalIndex = mt.__index
+setreadonly(mt, false)
+
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    local args = { ... }
+    local dropdownValue = Options.MyMultiDropdown and Options.MyMultiDropdown.Value
+
+    if not checkcaller() and dropdownValue then
+        if self == workspace and method == "Raycast" and dropdownValue['Raycast'] then
+            if Toggles.ToggleSilentAim and Toggles.ToggleSilentAim.Value and silentTarget and silentTargetPart then
+                local origin = args[1]
+                local pred = tonumber(Options.PredictionAimInput.Value) or 0
+                local targetPos = silentTargetPart.Position + (silentTargetPart.AssemblyLinearVelocity * pred)
+                
+                args[2] = (targetPos - origin).Unit * 9999
+                return originalNamecall(self, unpack(args))
+            end
+        end
+    end
+    return originalNamecall(self, ...)
+end)
+
+mt.__index = newcclosure(function(self, key)
+    if not checkcaller() and self == Mouse then
+        if Toggles.ToggleSilentAim and Toggles.ToggleSilentAim.Value and silentTarget and silentTargetPart then
+            if key == "Hit" then return CFrame.new(silentTargetPart.Position) end
+            if key == "Target" then return silentTargetPart end
+        end
+    end
+    return originalIndex(self, key)
+end)
+
+setreadonly(mt, true)
+SaveManager:LoadAutoloadConfig()
